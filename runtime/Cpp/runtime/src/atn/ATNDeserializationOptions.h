@@ -12,8 +12,6 @@ namespace atn {
 
   class ANTLR4CPP_PUBLIC ATNDeserializationOptions {
   private:
-    static ATNDeserializationOptions defaultOptions;
-
     bool readOnly;
     bool verifyATN;
     bool generateRuleBypassTransitions;
