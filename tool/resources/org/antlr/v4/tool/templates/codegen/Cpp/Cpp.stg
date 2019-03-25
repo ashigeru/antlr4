@@ -86,7 +86,6 @@ public:
   <endif>
 
 private:
-  static std::vector\<antlr4::dfa::DFA> _decisionToDFA;
   static antlr4::atn::PredictionContextCache _sharedContextCache;
   static std::vector\<std::string> _ruleNames;
   static std::vector\<std::string> _tokenNames;
@@ -96,6 +95,8 @@ private:
   static std::vector\<std::string> _literalNames;
   static std::vector\<std::string> _symbolicNames;
   static antlr4::dfa::Vocabulary _vocabulary;
+
+  static std::vector\<antlr4::dfa::DFA>& decisionToDFA();
   <atn>
 
   <namedActions.declarations>
@@ -115,7 +116,7 @@ private:
 
 Lexer(lexer, atn, actionFuncs, sempredFuncs, superClass = {Lexer}) ::= <<
 <lexer.name>::<lexer.name>(CharStream *input) : <superClass>(input) {
-  _interpreter = new atn::LexerATNSimulator(this, _atn, _decisionToDFA, _sharedContextCache);
+  _interpreter = new atn::LexerATNSimulator(this, _atn, decisionToDFA(), _sharedContextCache);
 }
 
 <lexer.name>::~<lexer.name>() {
@@ -184,7 +185,6 @@ bool <lexer.name>::sempred(RuleContext *context, size_t ruleIndex, size_t predic
 <sempredFuncs.values; separator="\n">
 
 // Static vars and initialization.
-std::vector\<dfa::DFA> <lexer.name>::_decisionToDFA;
 atn::PredictionContextCache <lexer.name>::_sharedContextCache;
 
 // We own the ATN which in turn owns the ATN states.
@@ -214,6 +214,18 @@ std::vector\<std::string> <lexer.name>::_symbolicNames = {
 dfa::Vocabulary <lexer.name>::_vocabulary(_literalNames, _symbolicNames);
 
 std::vector\<std::string> <lexer.name>::_tokenNames;
+
+std::vector\<dfa::DFA>& <lexer.name>::decisionToDFA() {
+  thread_local std::vector\<dfa::DFA> dfas;
+  if (dfas.empty()) {
+    size_t count = _atn.getNumberOfDecisions();
+    dfas.reserve(count);
+    for (size_t i = 0; i \< count; i++) { <! Rework class ATN to allow standard iterations. !>
+      dfas.emplace_back(_atn.getDecisionState(i), i);
+    }
+  }
+  return dfas;
+}
 
 <lexer.name>::Initializer::Initializer() {
   // This code could be in a static initializer lambda, but VS doesn't allow access to private class members from there.
@@ -311,7 +323,6 @@ public:
   <endif>
 
 private:
-  static std::vector\<antlr4::dfa::DFA> _decisionToDFA;
   static antlr4::atn::PredictionContextCache _sharedContextCache;
   static std::vector\<std::string> _ruleNames;
   static std::vector\<std::string> _tokenNames;
@@ -319,6 +330,8 @@ private:
   static std::vector\<std::string> _literalNames;
   static std::vector\<std::string> _symbolicNames;
   static antlr4::dfa::Vocabulary _vocabulary;
+
+  static std::vector\<antlr4::dfa::DFA>& decisionToDFA();
   <atn>
 
   <namedActions.declarations>
@@ -334,7 +347,7 @@ Parser(parser, funcs, atn, sempredFuncs, superClass = {Parser}) ::= <<
 using namespace antlr4;
 
 <parser.name>::<parser.name>(TokenStream *input) : <superClass>(input) {
-  _interpreter = new atn::ParserATNSimulator(this, _atn, _decisionToDFA, _sharedContextCache);
+  _interpreter = new atn::ParserATNSimulator(this, _atn, decisionToDFA(), _sharedContextCache);
 }
 
 <parser.name>::~<parser.name>() {
@@ -372,7 +385,6 @@ bool <parser.name>::sempred(RuleContext *context, size_t ruleIndex, size_t predi
 <sempredFuncs.values; separator="\n"><endif>
 
 // Static vars and initialization.
-std::vector\<dfa::DFA> <parser.name>::_decisionToDFA;
 atn::PredictionContextCache <parser.name>::_sharedContextCache;
 
 // We own the ATN which in turn owns the ATN states.
@@ -394,6 +406,18 @@ std::vector\<std::string> <parser.name>::_symbolicNames = {
 dfa::Vocabulary <parser.name>::_vocabulary(_literalNames, _symbolicNames);
 
 std::vector\<std::string> <parser.name>::_tokenNames;
+
+std::vector\<dfa::DFA>& <parser.name>::decisionToDFA() {
+  thread_local std::vector\<dfa::DFA> dfas;
+  if (dfas.empty()) {
+    size_t count = _atn.getNumberOfDecisions();
+    dfas.reserve(count);
+    for (size_t i = 0; i \< count; i++) { <! Rework class ATN to allow standard iterations. !>
+      dfas.emplace_back(_atn.getDecisionState(i), i);
+    }
+  }
+  return dfas;
+}
 
 <parser.name>::Initializer::Initializer() {
 	for (size_t i = 0; i \< _symbolicNames.size(); ++i) {
@@ -440,12 +464,6 @@ _serializedATN = {
 
 atn::ATNDeserializer deserializer;
 _atn = deserializer.deserialize(_serializedATN);
-
-size_t count = _atn.getNumberOfDecisions();
-_decisionToDFA.reserve(count);
-for (size_t i = 0; i \< count; i++) { <! Rework class ATN to allow standard iterations. !>
-  _decisionToDFA.emplace_back(_atn.getDecisionState(i), i);
-}
 >>
 
 RuleFunctionHeader(currentRule, args, code, locals, ruleCtx, altLabelCtxs, namedActions, finallyAction, postamble, exceptions) ::= <<

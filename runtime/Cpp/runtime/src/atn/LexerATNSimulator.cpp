@@ -181,8 +181,6 @@ size_t LexerATNSimulator::execATN(CharStream *input, dfa::DFAState *ds0) {
 }
 
 dfa::DFAState *LexerATNSimulator::getExistingTargetState(dfa::DFAState *s, size_t t) {
-  dfa::DFAState* retval = nullptr;
-  _edgeLock.readLock();
   if (t <= MAX_DFA_EDGE) {
     auto iterator = s->edges.find(t - MIN_DFA_EDGE);
 #if DEBUG_ATN == 1
@@ -192,10 +190,9 @@ dfa::DFAState *LexerATNSimulator::getExistingTargetState(dfa::DFAState *s, size_
 #endif
 
     if (iterator != s->edges.end())
-      retval = iterator->second;
+      return iterator->second;
   }
-  _edgeLock.readUnlock();
-  return retval;
+  return nullptr;
 }
 
 dfa::DFAState *LexerATNSimulator::computeTargetState(CharStream *input, dfa::DFAState *s, size_t t) {
@@ -525,14 +522,11 @@ dfa::DFAState *LexerATNSimulator::addDFAEdge(dfa::DFAState *from, size_t t, ATNC
 }
 
 void LexerATNSimulator::addDFAEdge(dfa::DFAState *p, size_t t, dfa::DFAState *q) {
-  if (/*t < MIN_DFA_EDGE ||*/ t > MAX_DFA_EDGE) { // MIN_DFA_EDGE is 0
-    // Only track edges within the DFA bounds
-    return;
-  }
-
-  _edgeLock.writeLock();
-  p->edges[t - MIN_DFA_EDGE] = q; // connect
-  _edgeLock.writeUnlock();
+    if (/*t < MIN_DFA_EDGE ||*/ t > MAX_DFA_EDGE) { // MIN_DFA_EDGE is 0
+        // Only track edges within the DFA bounds
+        return;
+    }
+    p->edges[t - MIN_DFA_EDGE] = q; // connect
 }
 
 dfa::DFAState *LexerATNSimulator::addDFAState(ATNConfigSet *configs) {
@@ -558,12 +552,10 @@ dfa::DFAState *LexerATNSimulator::addDFAState(ATNConfigSet *configs) {
 
   dfa::DFA &dfa = _decisionToDFA[_mode];
 
-  _stateLock.writeLock();
   if (!dfa.states.empty()) {
     auto iterator = dfa.states.find(proposed);
     if (iterator != dfa.states.end()) {
       delete proposed;
-      _stateLock.writeUnlock();
       return *iterator;
     }
   }
@@ -572,7 +564,6 @@ dfa::DFAState *LexerATNSimulator::addDFAState(ATNConfigSet *configs) {
   proposed->configs->setReadonly(true);
 
   dfa.states.insert(proposed);
-  _stateLock.writeUnlock();
 
   return proposed;
 }
